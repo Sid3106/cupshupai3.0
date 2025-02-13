@@ -10,9 +10,17 @@ export default defineConfig({
   },
   server: {
     port: 4000,
-    strictPort: true, // Fail if port 4000 is not available
-    host: true, // Listen on all addresses
-    open: true, // Open browser automatically
+    strictPort: true,
+    host: 'localhost',
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
+      port: 24678, // Dedicated WebSocket port
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    }
   },
   resolve: {
     alias: {

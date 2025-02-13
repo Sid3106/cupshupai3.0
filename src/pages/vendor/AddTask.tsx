@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { extractTextFromImage, extractOrderId } from '../../lib/googleVision';
 import { 
   ArrowLeft, 
   Loader2, 
@@ -10,7 +11,9 @@ import {
   ShoppingBag,
   Camera,
   Upload,
-  AlertCircle
+  AlertCircle,
+  Scan,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -35,36 +38,96 @@ export default function AddTask() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [processingOcr, setProcessingOcr] = useState(false);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, order_image: file });
+    if (!file) return;
+
+    try {
+      setError(null);
+      setProcessingOcr(true);
+      setFormData(prev => ({ ...prev, order_image: file }));
+      
       // Create preview URL
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
+
+      // Process OCR
+      console.log('Starting OCR processing for file:', file.name);
+      const extractedText = await extractTextFromImage(file);
+      console.log('OCR completed, extracted text:', extractedText);
+      
+      const orderId = extractOrderId(extractedText);
+      console.log('Extracted order ID:', orderId);
+      
+      if (orderId) {
+        setFormData(prev => ({ ...prev, order_id: orderId }));
+      } else {
+        setError('No order ID found in the image. Please enter it manually.');
+      }
+    } catch (err) {
+      console.error('Error processing image:', err);
+      setError(err instanceof Error ? err.message : 'Failed to process image');
+      // Reset form data on error
+      setFormData(prev => ({ ...prev, order_image: null }));
+      setImagePreview(null);
+    } finally {
+      setProcessingOcr(false);
     }
   };
 
   const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `${user?.id}/${fileName}`;
+    try {
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
 
-    const { error: uploadError, data } = await supabase.storage
-      .from('order-images')
-      .upload(filePath, file);
+      // Create a unique filename using timestamp and random string
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      
+      // Create path: user_id/filename
+      const filePath = `${user.id}/${fileName}`;
 
-    if (uploadError) {
-      throw uploadError;
+      console.log('Attempting to upload image to:', filePath);
+
+      // Upload to task_images bucket
+      const { error: uploadError, data } = await supabase.storage
+        .from('task_images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type // Explicitly set content type
+        });
+
+      if (uploadError) {
+        console.error('Error uploading image:', {
+          error: uploadError,
+          path: filePath,
+          fileType: file.type,
+          fileSize: file.size
+        });
+        throw new Error(
+          uploadError.message || 'Failed to upload image. Please try again.'
+        );
+      }
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('task_images')
+        .getPublicUrl(filePath);
+
+      console.log('Image uploaded successfully, URL:', publicUrl);
+      return publicUrl;
+    } catch (error) {
+      console.error('Error in uploadImage:', error);
+      throw error instanceof Error 
+        ? error 
+        : new Error('Failed to upload image. Please try again.');
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('order-images')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,37 +136,89 @@ export default function AddTask() {
 
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      // Validate phone number
-      const phoneNumber = parseInt(formData.customer_number);
-      if (isNaN(phoneNumber)) {
-        throw new Error('Please enter a valid phone number');
+      // Validate phone number - ensure it's a valid number
+      const phoneNumber = formData.customer_number.replace(/\D/g, '');
+      if (!phoneNumber || phoneNumber.length < 10) {
+        throw new Error('Please enter a valid 10-digit phone number');
       }
 
       // Upload image if present
       let imageUrl = '';
       if (formData.order_image) {
-        imageUrl = await uploadImage(formData.order_image);
+        try {
+          imageUrl = await uploadImage(formData.order_image);
+        } catch (uploadError) {
+          throw new Error('Failed to upload image. Please try again.');
+        }
       }
 
-      const { error: insertError } = await supabase
+      // Prepare task data
+      const taskData = {
+        vendor_id: user.id,
+        activity_id: activityId,
+        customer_name: formData.customer_name.trim(),
+        customer_number: Number(phoneNumber),
+        order_id: formData.order_id || null,
+        order_image_url: imageUrl // This will now be a valid public URL or empty string
+      };
+
+      // Debug log
+      console.log('Attempting to create task with data:', {
+        ...taskData,
+        customer_number_length: phoneNumber.length,
+        user_id_exists: !!user.id,
+        activity_id_exists: !!activityId,
+        has_image: !!imageUrl
+      });
+
+      // Insert task into database
+      const { data: task, error: insertError } = await supabase
         .from('tasks')
-        .insert({
-          activity_id: activityId,
-          vendor_id: user.id,
-          customer_name: formData.customer_name,
-          customer_number: phoneNumber,
-          order_id: formData.order_id || null,
-          order_image_url: imageUrl
+        .insert(taskData)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Detailed insert error:', {
+          code: insertError.code,
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
         });
+        
+        // Handle specific error cases
+        if (insertError.code === '42501') {
+          throw new Error('You do not have permission to create tasks for this activity');
+        } else if (insertError.code === '23503') {
+          throw new Error('Invalid activity or vendor ID. Please check if you are assigned to this activity.');
+        } else if (insertError.code === '23514') {
+          throw new Error('Invalid data format. Please check all fields and try again.');
+        } else {
+          throw new Error(`Failed to create task: ${insertError.message}`);
+        }
+      }
 
-      if (insertError) throw insertError;
+      console.log('Task created successfully:', task);
 
-      // Navigate back to activity detail
-      navigate(`/vendor/activities/${activityId}`);
+      // Show success message
+      setSuccess(true);
+      
+      // Reset form after 2 seconds and navigate back
+      setTimeout(() => {
+        navigate(`/vendor/activities/${activityId}`);
+      }, 2000);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create task');
+      console.error('Full error object:', err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Failed to create task. Please check your input and try again.'
+      );
+      setSuccess(false);
     } finally {
       setLoading(false);
     }
@@ -126,6 +241,17 @@ export default function AddTask() {
           <p className="text-sm text-gray-600">Create a new task for this activity</p>
         </div>
       </div>
+
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-green-800">Task created successfully!</p>
+            <p className="text-sm text-green-600">Redirecting to activity details...</p>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (
@@ -179,7 +305,7 @@ export default function AddTask() {
           {/* Order Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Order Image
+              Order Image {processingOcr && <span className="text-primary ml-2">(Processing...)</span>}
             </label>
             <div className="space-y-4">
               {/* File Upload Button */}
@@ -191,6 +317,7 @@ export default function AddTask() {
                     onChange={handleImageChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     capture="environment"
+                    disabled={processingOcr}
                   />
                   <div className="w-full h-12 border border-gray-200 rounded-lg flex items-center justify-center gap-2 text-gray-600 hover:bg-gray-50">
                     <Upload className="w-5 h-5" />
@@ -204,11 +331,13 @@ export default function AddTask() {
                     onChange={handleImageChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     capture="environment"
+                    disabled={processingOcr}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     className="h-12 px-4"
+                    disabled={processingOcr}
                   >
                     <Camera className="w-5 h-5" />
                   </Button>
@@ -232,6 +361,7 @@ export default function AddTask() {
                       setFormData({ ...formData, order_image: null });
                       setImagePreview(null);
                     }}
+                    disabled={processingOcr}
                   >
                     Remove
                   </Button>
