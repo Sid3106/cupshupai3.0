@@ -24,6 +24,8 @@ import Profile from './pages/profile/Profile';
 import Settings from './pages/settings/Settings';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AddTask from './pages/vendor/AddTask';
+import VendorActivityDetail from './pages/vendor/VendorActivityDetail';
 
 function App() {
   return (
@@ -72,6 +74,8 @@ function App() {
                 <Route path="activities" element={<VendorActivityList />} />
                 <Route path="my-activities" element={<MyActivities />} />
                 <Route path="my-tasks" element={<MyTasks />} />
+                <Route path="activities/:id" element={<VendorActivityDetail />} />
+                <Route path="activities/:id/tasks/new" element={<AddTask />} />
               </Route>
             </Route>
           </Routes>
