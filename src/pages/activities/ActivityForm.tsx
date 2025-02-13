@@ -12,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Define city options based on the enum in the database
 const CITY_OPTIONS = [
@@ -49,19 +50,24 @@ export default function ActivityForm() {
   });
   
   const navigate = useNavigate();
+  const { refreshSession } = useAuth();
 
   useEffect(() => {
     const fetchBrands = async () => {
       try {
-        // Query to fetch distinct brand names from clients table
+        await refreshSession();
         const { data, error } = await supabase
           .from('clients')
           .select('brand_name')
           .not('brand_name', 'is', null);
 
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes('JWT')) {
+            throw new Error('Session expired. Please refresh the page or log in again.');
+          }
+          throw error;
+        }
 
-        // Filter out duplicates and null values
         const uniqueBrands = data
           ?.filter((item): item is { brand_name: string } => 
             item.brand_name != null
@@ -74,12 +80,15 @@ export default function ActivityForm() {
         setBrands(uniqueBrands);
       } catch (err) {
         console.error('Error fetching brands:', err);
-        setError('Failed to load brands');
+        setError(err instanceof Error ? err.message : 'Failed to load brands');
+        if (err instanceof Error && err.message.includes('Session expired')) {
+          navigate('/login');
+        }
       }
     };
 
     fetchBrands();
-  }, []);
+  }, [navigate, refreshSession]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +97,7 @@ export default function ActivityForm() {
     setSuccess(false);
 
     try {
+      await refreshSession();
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Not authenticated');
 
@@ -119,6 +129,9 @@ export default function ActivityForm() {
         navigate('/cupshup/activities');
       }, 2000);
     } catch (err) {
+      if (err.message.includes('JWT') || err.message.includes('session')) {
+        navigate('/login');
+      }
       setError(err instanceof Error ? err.message : 'Failed to create activity');
       setSuccess(false);
     } finally {
