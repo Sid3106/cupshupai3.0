@@ -52,7 +52,15 @@ export default function MappedActivities() {
           .order('id', { ascending: false });
 
         if (error) throw error;
-        setAssignments(data || []);
+
+        // Sort assignments by activity start_date in descending order
+        const sortedAssignments = (data || []).sort((a, b) => {
+          const dateA = a.activity.start_date ? new Date(a.activity.start_date).getTime() : 0;
+          const dateB = b.activity.start_date ? new Date(b.activity.start_date).getTime() : 0;
+          return dateB - dateA; // Sort in descending order (latest first)
+        });
+
+        setAssignments(sortedAssignments);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch assignments');
       } finally {

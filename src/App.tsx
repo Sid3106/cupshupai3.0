@@ -12,6 +12,7 @@ import ClientList from './pages/clients/ClientList';
 import ActivityList from './pages/activities/ActivityList';
 import ActivityDetail from './pages/activities/ActivityDetail';
 import MappedActivities from './pages/activities/MappedActivities';
+import MappedTasks from './pages/tasks/MappedTasks';
 import InviteUser from './pages/invite/InviteUser';
 import ActivityForm from './pages/activities/ActivityForm';
 import VendorDashboard from './pages/vendor/VendorDashboard';
@@ -61,6 +62,7 @@ function App() {
                 <Route path="activities" element={<ActivityList />} />
                 <Route path="activities/:id" element={<ActivityDetail />} />
                 <Route path="mapped-activities" element={<MappedActivities />} />
+                <Route path="mapped-tasks" element={<MappedTasks />} />
                 <Route path="invite/vendor" element={<InviteUser type="vendor" />} />
                 <Route path="invite/client" element={<InviteUser type="client" />} />
                 <Route path="activities/new" element={<ActivityForm />} />

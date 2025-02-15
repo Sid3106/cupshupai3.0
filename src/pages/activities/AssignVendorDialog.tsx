@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import * as Dialog from '@radix-ui/react-dialog';
 
@@ -21,6 +21,7 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const [formData, setFormData] = useState({
     vendorId: '',
@@ -56,10 +57,12 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setSuccess(false);
 
     try {
       // Validate required fields
       if (!formData.vendorId) throw new Error('Please select a vendor');
+      if (!formData.message.trim()) throw new Error('Please enter a message for the vendor');
       if (!formData.target) throw new Error('Please enter a target value');
 
       const { error: assignmentError } = await supabase
@@ -74,14 +77,19 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
 
       if (assignmentError) throw assignmentError;
 
-      // Close dialog and reset form
-      onOpenChange(false);
-      setFormData({
-        vendorId: '',
-        message: '',
-        target: '',
-        incentive: ''
-      });
+      // Show success message
+      setSuccess(true);
+
+      // Close dialog and reset form after 2 seconds
+      setTimeout(() => {
+        onOpenChange(false);
+        setFormData({
+          vendorId: '',
+          message: '',
+          target: '',
+          incentive: ''
+        });
+      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to assign vendor');
     } finally {
@@ -101,6 +109,16 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-green-800">Activity assigned successfully!</p>
+                <p className="text-green-600">The vendor will be notified.</p>
+              </div>
             </div>
           )}
 
@@ -128,7 +146,7 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
 
             <div>
               <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                Message to Vendor
+                Message to Vendor <span className="text-red-500">*</span>
               </label>
               <textarea
                 id="message"
@@ -136,7 +154,8 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                placeholder="Add any specific instructions or notes..."
+                placeholder="Add specific instructions or notes..."
+                required
               />
             </div>
 

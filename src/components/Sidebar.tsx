@@ -4,7 +4,8 @@ import {
   Users, 
   Building2, 
   Calendar,
-  ListChecks
+  ListChecks,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -33,6 +34,11 @@ const navigation = [
     name: 'Mapped Activities',
     href: '/cupshup/mapped-activities',
     icon: ListChecks
+  },
+  {
+    name: 'Mapped Tasks',
+    href: '/cupshup/mapped-tasks',
+    icon: ClipboardList
   }
 ];
 

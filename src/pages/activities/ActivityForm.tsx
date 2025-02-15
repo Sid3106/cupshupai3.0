@@ -38,6 +38,7 @@ export default function ActivityForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     brand: '',
     city: '',
@@ -51,6 +52,9 @@ export default function ActivityForm() {
   
   const navigate = useNavigate();
   const { refreshSession } = useAuth();
+
+  // Get today's date in YYYY-MM-DD format for date inputs
+  const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -90,8 +94,57 @@ export default function ActivityForm() {
     fetchBrands();
   }, [navigate, refreshSession]);
 
+  // Validate form fields
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.brand) {
+      errors.brand = 'Please select a brand';
+    }
+    if (!formData.city) {
+      errors.city = 'Please select a city';
+    }
+    if (!formData.location.trim()) {
+      errors.location = 'Please enter a location';
+    }
+    if (!formData.startDate) {
+      errors.startDate = 'Please select a start date';
+    }
+    if (!formData.startTime) {
+      errors.startTime = 'Please select a start time';
+    }
+    if (!formData.endDate) {
+      errors.endDate = 'Please select an end date';
+    }
+    if (!formData.endTime) {
+      errors.endTime = 'Please select an end time';
+    }
+    if (!formData.instructions.trim()) {
+      errors.instructions = 'Please provide activity instructions';
+    }
+
+    // Validate date ranges
+    if (formData.startDate && formData.endDate) {
+      const startDateTime = new Date(`${formData.startDate}T${formData.startTime || '00:00'}`);
+      const endDateTime = new Date(`${formData.endDate}T${formData.endTime || '00:00'}`);
+      
+      if (endDateTime < startDateTime) {
+        errors.endDate = 'End date must be after start date';
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      setError('Please fill in all required fields correctly');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
@@ -110,10 +163,10 @@ export default function ActivityForm() {
         .insert({
           brand: formData.brand,
           city: formData.city,
-          location: formData.location,
+          location: formData.location.trim(),
           start_date: startDateTime,
           end_date: endDateTime,
-          instructions: formData.instructions,
+          instructions: formData.instructions.trim(),
           created_by: userData.user.id,
           status: 'pending'
         })
@@ -128,8 +181,8 @@ export default function ActivityForm() {
       setTimeout(() => {
         navigate('/cupshup/activities');
       }, 2000);
-    } catch (err) {
-      if (err.message.includes('JWT') || err.message.includes('session')) {
+    } catch (err: unknown) {
+      if (err instanceof Error && (err.message.includes('JWT') || err.message.includes('session'))) {
         navigate('/login');
       }
       setError(err instanceof Error ? err.message : 'Failed to create activity');
@@ -186,15 +239,20 @@ export default function ActivityForm() {
           <div className="grid grid-cols-2 gap-6">
             <div>
               <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
-                Brand
+                Brand <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Building2 className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <select
                   id="brand"
                   value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none"
+                  onChange={(e) => {
+                    setFormData({ ...formData, brand: e.target.value });
+                    setValidationErrors({ ...validationErrors, brand: '' });
+                  }}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
+                    validationErrors.brand ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 >
                   <option value="">Select a brand</option>
@@ -204,20 +262,28 @@ export default function ActivityForm() {
                     </option>
                   ))}
                 </select>
+                {validationErrors.brand && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.brand}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                City
+                City <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <select
                   id="city"
                   value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none"
+                  onChange={(e) => {
+                    setFormData({ ...formData, city: e.target.value });
+                    setValidationErrors({ ...validationErrors, city: '' });
+                  }}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
+                    validationErrors.city ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 >
                   <option value="">Select a city</option>
@@ -227,12 +293,15 @@ export default function ActivityForm() {
                     </option>
                   ))}
                 </select>
+                {validationErrors.city && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                Location
+                Location <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -240,84 +309,136 @@ export default function ActivityForm() {
                   type="text"
                   id="location"
                   value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  onChange={(e) => {
+                    setFormData({ ...formData, location: e.target.value });
+                    setValidationErrors({ ...validationErrors, location: '' });
+                  }}
+                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    validationErrors.location ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   placeholder="Enter specific location"
+                  required
                 />
+                {validationErrors.location && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.location}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   id="startDate"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  min={today}
+                  onChange={(e) => {
+                    setFormData({ ...formData, startDate: e.target.value });
+                    setValidationErrors({ ...validationErrors, startDate: '' });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    validationErrors.startDate ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 />
+                {validationErrors.startDate && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.startDate}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Time
+                  Start Time <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="time"
                   id="startTime"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  onChange={(e) => {
+                    setFormData({ ...formData, startTime: e.target.value });
+                    setValidationErrors({ ...validationErrors, startTime: '' });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    validationErrors.startTime ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 />
+                {validationErrors.startTime && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.startTime}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date
+                  End Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   id="endDate"
                   value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  min={formData.startDate || today}
+                  onChange={(e) => {
+                    setFormData({ ...formData, endDate: e.target.value });
+                    setValidationErrors({ ...validationErrors, endDate: '' });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    validationErrors.endDate ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 />
+                {validationErrors.endDate && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.endDate}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  End Time
+                  End Time <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="time"
                   id="endTime"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  onChange={(e) => {
+                    setFormData({ ...formData, endTime: e.target.value });
+                    setValidationErrors({ ...validationErrors, endTime: '' });
+                  }}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                    validationErrors.endTime ? 'border-red-300' : 'border-gray-200'
+                  }`}
                   required
                 />
+                {validationErrors.endTime && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.endTime}</p>
+                )}
               </div>
             </div>
           </div>
 
           <div>
             <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-1">
-              Instructions
+              Instructions <span className="text-red-500">*</span>
             </label>
             <textarea
               id="instructions"
               value={formData.instructions}
-              onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, instructions: e.target.value });
+                setValidationErrors({ ...validationErrors, instructions: '' });
+              }}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              placeholder="Add any specific instructions or notes..."
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                validationErrors.instructions ? 'border-red-300' : 'border-gray-200'
+              }`}
+              placeholder="Add activity instructions or notes..."
+              required
             />
+            {validationErrors.instructions && (
+              <p className="mt-1 text-sm text-red-600">{validationErrors.instructions}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-4 pt-6">
