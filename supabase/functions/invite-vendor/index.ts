@@ -23,11 +23,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SERVICE_ROLE_KEY")!
     );
 
-    // Create new auth user with Vendor role
+    // Create new auth user with Vendor role and metadata
     const { data: userData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password: "TemporaryPassword123",
-      user_metadata: { role: "Vendor" },
+      password: "cupshup@1234",
+      user_metadata: { 
+        role: "Vendor",
+        name: vendorName,
+        phone,
+        city,
+        is_invited: true
+      },
       email_confirm: true,
     });
 
@@ -36,20 +42,6 @@ Deno.serve(async (req) => {
     const userId = userData.user?.id;
     if (!userId) {
       throw new Error("No user ID returned from createUser");
-    }
-
-    // Insert vendor details
-    const { error: vendorInsertError } = await supabaseAdmin
-      .from("vendors")
-      .insert([{
-        user_id: userId,
-        vendor_name: vendorName,
-        phone,
-        city,
-      }]);
-
-    if (vendorInsertError) {
-      throw vendorInsertError;
     }
 
     // Return success response
