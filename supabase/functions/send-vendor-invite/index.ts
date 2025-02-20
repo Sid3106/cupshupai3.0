@@ -1,9 +1,8 @@
-import { serve } from 'https://deno.fresh.dev/std@v9.6.1/http/server.ts';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
-import { Resend } from 'https://esm.sh/resend@3.2.0';
 
-const resendApiKey = Deno.env.get('RESEND_API_KEY');
-const appUrl = Deno.env.get('APP_URL');
+const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
+const APP_URL = Deno.env.get('APP_URL');
 
 serve(async (req) => {
   // Handle CORS
@@ -12,74 +11,126 @@ serve(async (req) => {
   }
 
   try {
-    if (!resendApiKey) {
-      throw new Error('RESEND_API_KEY is not set');
+    if (!SENDGRID_API_KEY) {
+      throw new Error('SENDGRID_API_KEY is not set');
     }
 
-    const resend = new Resend(resendApiKey);
-    const { email, tempPassword } = await req.json();
+    const { email, vendorName, tempPassword } = await req.json();
 
-    const response = await resend.emails.send({
-      from: 'CupShup <noreply@cupshup.co.in>',
-      to: email,
+    // Log the request data (without sensitive info)
+    console.log('Sending email to:', email);
+    console.log('SendGrid API Key length:', SENDGRID_API_KEY.length);
+
+    const emailData = {
+      personalizations: [{
+        to: [{ email }]
+      }],
+      from: { email: "contact@cupshup.ai", name: "CupShup" },
       subject: 'Welcome to CupShup - Your Vendor Account Details',
-      html: `
-        <!DOCTYPE html>
-        <html lang="en">
+      content: [{
+        type: 'text/html',
+        value: `
+          <!DOCTYPE html>
+          <html>
           <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>Welcome to CupShup</title>
           </head>
-          <body style="font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <img src="${appUrl}/logo.svg" alt="CupShup Logo" style="max-width: 150px; height: auto;">
-            </div>
+          <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+              <tr>
+                <td align="center">
+                  <table width="600px" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; padding: 20px;">
+                    
+                    <!-- Logo -->
+                    <tr>
+                      <td align="center" style="padding-bottom: 20px;">
+                        <img src="https://jfntmxbflpbeieuwwebz.supabase.co/storage/v1/object/sign/cupshup/CupShupLogo.png?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1cmwiOiJjdXBzaHVwL0N1cFNodXBMb2dvLnBuZyIsImlhdCI6MTczOTc1NjQ5OSwiZXhwIjoxNzcxMjkyNDk5fQ.oTTH26i84ITLX_2p_wjPRtLjRdkThHPBbCRKigdde14" alt="CupShup Logo" width="150">
+                      </td>
+                    </tr>
 
-            <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              <h1 style="color: #00A979; margin-bottom: 20px; font-size: 24px;">Welcome to CupShup! 🎉</h1>
-              
-              <p style="margin-bottom: 20px;">
-                We're excited to have you join our network of trusted vendors. Your account has been successfully created.
-              </p>
+                    <!-- Welcome Text -->
+                    <tr>
+                      <td align="center">
+                        <h1 style="color: #00A979; font-size: 24px;">Welcome to CupShup! 🎉</h1>
+                        <p style="color: #555; font-size: 16px;">Dear <strong>${vendorName}</strong>,</p>
+                        <p style="color: #555; font-size: 16px;">We're excited to have you join our network of trusted vendors.</p>
+                      </td>
+                    </tr>
 
-              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; margin-bottom: 25px;">
-                <h2 style="color: #2c3e50; font-size: 18px; margin-bottom: 15px;">Your Login Credentials</h2>
-                <p style="margin-bottom: 10px;"><strong>Email:</strong> ${email}</p>
-                <p style="margin-bottom: 10px;"><strong>Temporary Password:</strong> ${tempPassword}</p>
-                <p style="color: #dc3545; font-size: 14px; margin-top: 10px;">
-                  ⚠️ For security reasons, please change your password upon first login.
-                </p>
-              </div>
+                    <!-- Credentials Section -->
+                    <tr>
+                      <td align="center" style="padding: 20px; background-color: #f9f9f9; border-radius: 5px; margin: 20px;">
+                        <h2 style="color: #333; font-size: 18px; margin-bottom: 10px;">Your Login Credentials</h2>
+                        <p style="font-size: 16px; color: #555;"><strong>Email:</strong> <a href="mailto:${email}" style="color: #00A979; text-decoration: none;">${email}</a></p>
+                        <p style="font-size: 16px; color: #555;"><strong>Password:</strong> ${tempPassword}</p>
+                        <p style="font-size: 14px; color: #d9534f; margin-top: 10px;">For security reasons, please change your password upon first login.</p>
+                      </td>
+                    </tr>
 
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/login" 
-                   style="display: inline-block; background-color: #00A979; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                  Login to Your Account
-                </a>
-              </div>
+                    <!-- Login Button -->
+                    <tr>
+                      <td align="center" style="padding: 20px;">
+                        <a href="${APP_URL}/login" target="_blank" style="background-color: #00A979; color: white; text-decoration: none; font-size: 16px; padding: 12px 25px; border-radius: 5px; display: inline-block;">Login to Your Account</a>
+                      </td>
+                    </tr>
 
-              <div style="border-top: 1px solid #eee; padding-top: 20px;">
-                <h2 style="color: #2c3e50; font-size: 18px; margin-bottom: 15px;">Need Help?</h2>
-                <p style="margin-bottom: 20px;">
-                  Our support team is here to help you get started. Contact us at:
-                  <br>
-                  📧 <a href="mailto:support@cupshup.co.in" style="color: #00A979; text-decoration: none;">support@cupshup.co.in</a>
-                </p>
-              </div>
-            </div>
+                    <!-- Footer -->
+                    <tr>
+                      <td align="center" style="padding-top: 20px; font-size: 14px; color: #555;">
+                        <p>Need help? Contact us at <a href="mailto:contact@cupshup.ai" style="color: #00A979; text-decoration: none;">contact@cupshup.ai</a></p>
+                      </td>
+                    </tr>
 
-            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-              <p>
-                © ${new Date().getFullYear()} CupShup. All rights reserved.
-                <br>
-                This email was sent to ${email}. If you did not request this email, please contact support.
-              </p>
-            </div>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
           </body>
-        </html>
-      `
+          </html>
+        `
+      }]
+    };
+
+    // Log the request configuration
+    console.log('Making request to SendGrid with config:', {
+      url: 'https://api.sendgrid.com/v3/mail/send',
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer [REDACTED]',
+        'Content-Type': 'application/json'
+      },
+      bodyPreview: {
+        from: emailData.from,
+        to: emailData.personalizations[0].to,
+        subject: emailData.subject
+      }
     });
+
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(emailData)
+    });
+
+    // Log the response details
+    console.log('SendGrid Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries([...response.headers.entries()])
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('SendGrid Error Details:', errorData);
+      throw new Error(JSON.stringify(errorData));
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -90,9 +141,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    console.error('Full error details:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to send email' 
+        error: error instanceof Error ? error.message : 'Failed to send email',
+        details: error
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

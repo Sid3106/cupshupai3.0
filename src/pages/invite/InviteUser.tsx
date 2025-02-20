@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { inviteVendor } from '../../lib/api';
+import { inviteVendor, sendVendorInviteEmail } from '../../lib/api';
 import { 
   Users,
   Building2,
@@ -50,15 +50,26 @@ export default function InviteUser({ type }: InviteUserProps) {
 
     try {
       if (type === 'vendor') {
-        const response = await inviteVendor({
+        // First, create the vendor
+        const vendorResponse = await inviteVendor({
           vendorName: name,
           email,
           phone,
           city
         });
 
-        if (!response.success) {
-          throw new Error(response.error || 'Failed to invite vendor');
+        if (!vendorResponse.success) {
+          throw new Error(vendorResponse.error || 'Failed to invite vendor');
+        }
+
+        // Then, send the invite email
+        const emailResponse = await sendVendorInviteEmail(email, name);
+        
+        if (!emailResponse.success) {
+          // Log the error but don't throw - vendor is already created
+          console.error('Failed to send invite email:', emailResponse.error);
+          setError('Vendor created successfully but failed to send invite email. Please try resending the invite.');
+          return;
         }
       }
       setSuccess(true);

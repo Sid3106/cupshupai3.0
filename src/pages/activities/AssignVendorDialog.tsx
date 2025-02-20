@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import * as Dialog from '@radix-ui/react-dialog';
+import { sendActivityAssignmentEmail } from '../../lib/api';
 
 interface Vendor {
   id: string;
@@ -65,6 +66,30 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
       if (!formData.message.trim()) throw new Error('Please enter a message for the vendor');
       if (!formData.target) throw new Error('Please enter a target value');
 
+      // First, get the activity details
+      const { data: activity, error: activityError } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('id', activityId)
+        .single();
+
+      if (activityError) throw activityError;
+
+      // Get the vendor details
+      const { data: vendor, error: vendorError } = await supabase
+        .from('vendors')
+        .select(`
+          vendor_name,
+          profile:profiles!inner(
+            email
+          )
+        `)
+        .eq('user_id', formData.vendorId)
+        .single();
+
+      if (vendorError) throw vendorError;
+
+      // Create the assignment
       const { error: assignmentError } = await supabase
         .from('activity_assignments')
         .insert({
@@ -77,10 +102,27 @@ export default function AssignVendorDialog({ activityId, open, onOpenChange }: A
 
       if (assignmentError) throw assignmentError;
 
-      // Show success message
+      // Send email notification
+      const emailResponse = await sendActivityAssignmentEmail({
+        vendorName: vendor.vendor_name,
+        vendorEmail: vendor.profile.email,
+        brand: activity.brand,
+        city: activity.city,
+        location: activity.location,
+        startDate: activity.start_date,
+        endDate: activity.end_date,
+        instructions: formData.message,
+        target: parseInt(formData.target),
+        incentive: formData.incentive ? parseInt(formData.incentive) : undefined
+      });
+
+      if (!emailResponse.success) {
+        console.error('Failed to send email notification:', emailResponse.error);
+        // Don't throw error here as the assignment was successful
+      }
+
       setSuccess(true);
 
-      // Close dialog and reset form after 2 seconds
       setTimeout(() => {
         onOpenChange(false);
         setFormData({
