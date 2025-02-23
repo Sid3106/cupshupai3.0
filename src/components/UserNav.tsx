@@ -62,7 +62,13 @@ export function UserNav() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount>
+      <DropdownMenuContent 
+        className="w-56" 
+        align="end" 
+        forceMount
+        sideOffset={8}
+        alignOffset={-4}
+      >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{userName}</p>
@@ -73,15 +79,24 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => navigate('/profile')}>
+          <DropdownMenuItem 
+            className="cursor-pointer"
+            onClick={() => navigate('/profile')}
+          >
             Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate('/settings')}>
+          <DropdownMenuItem 
+            className="cursor-pointer"
+            onClick={() => navigate('/settings')}
+          >
             Settings
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem 
+          className="cursor-pointer text-red-600 focus:text-red-600"
+          onClick={handleSignOut}
+        >
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
