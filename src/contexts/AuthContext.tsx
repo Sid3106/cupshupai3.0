@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
@@ -18,6 +18,14 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Add a utility for consistent logging
+const logWithTime = (message: string, data?: any) => {
+  console.log(`[${new Date().toISOString()}] ${message}`, data ? data : '');
+};
+
+// Add session attempt tracking
+let refreshAttemptId = 0;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -26,69 +34,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session: null
   });
 
-  console.log('AuthProvider: Current state:', state);
-
-  const refreshSession = async () => {
-    console.log('refreshSession: Starting refresh');
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('refreshSession: Got session:', session, 'error:', error);
-      
-      if (error) throw error;
-      
-      if (session?.user) {
-        await updateAuthState(session.user, session);
-      } else {
-        console.log('refreshSession: No session found, setting loading false');
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    } catch (error) {
-      console.error('Error refreshing session:', error);
-      setState(prev => ({ ...prev, loading: false }));
-    }
-  };
+  // Add ref to track ongoing profile fetches
+  const profileFetchRef = useRef<{[key: string]: boolean}>({});
 
   async function updateAuthState(user: User | null, session: Session | null) {
-    console.log('updateAuthState: Starting with user:', user?.id);
+    const updateId = Date.now().toString();
+    
+    // Check if there's already an ongoing fetch
+    if (user && profileFetchRef.current[user.id]) {
+      logWithTime(`[Auth State Update ${updateId}] Skipping duplicate fetch for user ${user.id}`);
+      return;
+    }
+
+    logWithTime(`[Auth State Update ${updateId}] Starting`, {
+      existingState: {
+        userId: state.user?.id,
+        role: state.role,
+        hasSession: !!state.session
+      },
+      newUser: user?.id,
+      sessionExpiry: session?.expires_at
+    });
+
     try {
       if (!user) {
-        console.log('updateAuthState: No user, clearing state');
+        logWithTime(`[Auth State Update ${updateId}] No user, clearing state`);
         setState({ user: null, role: null, loading: false, session: null });
         return;
       }
 
-      console.log('updateAuthState: Fetching user profile');
+      // Mark this user's fetch as ongoing
+      profileFetchRef.current[user.id] = true;
+
+      // Set a timeout using Promise.race
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000);
+      });
+
       const profilePromise = supabase
         .from('profiles')
         .select('role')
         .eq('user_id', user.id)
         .single();
 
-      // Add timeout to prevent infinite waiting
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000);
-      });
-
       const { data: profile, error: profileError } = await Promise.race([
         profilePromise,
         timeoutPromise
       ]) as any;
 
-      console.log('updateAuthState: Profile fetch complete', { profile, error: profileError });
+      // Clear the ongoing fetch marker
+      delete profileFetchRef.current[user.id];
 
       if (profileError) {
-        console.error('updateAuthState: Profile fetch error:', profileError);
-        // Don't throw error, just set state with available data
-        setState({
-          user,
-          role: null,
-          loading: false,
-          session
+        logWithTime(`[Auth State Update ${updateId}] Profile error`, {
+          error: profileError.message,
+          userId: user.id
         });
+        
+        setState(prev => ({
+          ...prev,
+          user,
+          session,
+          loading: false
+        }));
         return;
       }
 
-      console.log('updateAuthState: Got profile:', profile);
+      logWithTime(`[Auth State Update ${updateId}] Complete`, {
+        userId: user.id,
+        role: profile?.role,
+        hasSession: !!session
+      });
+
       setState({
         user,
         role: profile?.role ?? null,
@@ -96,96 +113,164 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session
       });
     } catch (error) {
-      console.error('Error in updateAuthState:', error);
-      // Set state even if there's an error to prevent infinite loading
-      setState({
-        user,
-        role: null,
-        loading: false,
-        session
+      // Clear the ongoing fetch marker on error
+      if (user) delete profileFetchRef.current[user.id];
+      
+      logWithTime(`[Auth State Update ${updateId}] Error`, {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: user?.id
       });
+      
+      // Preserve existing state on error
+      setState(prev => ({
+        ...prev,
+        user,
+        session,
+        loading: false
+      }));
     }
   }
 
-  useEffect(() => {
-    let mounted = true;
-    console.log('AuthProvider: Effect starting');
+  const refreshSession = async () => {
+    const currentAttemptId = ++refreshAttemptId;
+    
+    // Don't refresh if there's an ongoing profile fetch
+    if (Object.keys(profileFetchRef.current).length > 0) {
+      logWithTime(`[Session Refresh ${currentAttemptId}] Skipping - ongoing profile fetch`);
+      return;
+    }
 
-    // Initialize auth state
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('Initial getSession:', { session: session?.user?.id, error });
-      
-      if (!mounted) {
-        console.log('Effect: Component unmounted, skipping update');
-        return;
+    logWithTime(`[Session Refresh ${currentAttemptId}] Starting`, {
+      currentState: {
+        userId: state.user?.id,
+        role: state.role,
+        hasSession: !!state.session
       }
+    });
+
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
-        console.error('Session fetch error:', error);
-        setState(prev => ({ ...prev, loading: false }));
-        return;
+        logWithTime(`[Session Refresh ${currentAttemptId}] Error`, { error: error.message });
+        throw error;
       }
-
+      
       if (session?.user) {
-        updateAuthState(session.user, session);
+        logWithTime(`[Session Refresh ${currentAttemptId}] Session found`, {
+          userId: session.user.id,
+          expiresAt: session.expires_at
+        });
+        await updateAuthState(session.user, session);
       } else {
-        console.log('No initial session found');
+        logWithTime(`[Session Refresh ${currentAttemptId}] No session found`);
         setState(prev => ({ ...prev, loading: false }));
       }
-    });
+    } catch (error) {
+      logWithTime(`[Session Refresh ${currentAttemptId}] Error`, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      setState(prev => ({ ...prev, loading: false }));
+    }
+  };
 
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      if (!mounted) return;
+  useEffect(() => {
+    let mounted = true;
+    let refreshInterval: number;
 
-      if (event === 'SIGNED_OUT') {
-        setState({ user: null, role: null, loading: false, session: null });
+    const initializeAuth = async () => {
+      logWithTime('[Auth Initialize] Starting');
+      
+      if (!mounted) {
+        logWithTime('[Auth Initialize] Not mounted, skipping');
         return;
       }
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await updateAuthState(session?.user ?? null, session);
-      }
-    });
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          logWithTime('[Auth Initialize] Error', { error: error.message });
+          setState(prev => ({ ...prev, loading: false }));
+          return;
+        }
 
-    // Handle tab visibility changes
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('Tab became visible, refreshing session');
-        refreshSession();
+        if (session?.user) {
+          logWithTime('[Auth Initialize] Session found', {
+            userId: session.user.id,
+            expiresAt: session.expires_at
+          });
+          await updateAuthState(session.user, session);
+        } else {
+          logWithTime('[Auth Initialize] No session');
+          setState(prev => ({ ...prev, loading: false }));
+        }
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!mounted) return;
+
+            logWithTime('[Auth State Change]', {
+              event,
+              userId: session?.user?.id,
+              expiresAt: session?.expires_at
+            });
+
+            if (event === 'SIGNED_OUT') {
+              setState({ user: null, role: null, loading: false, session: null });
+              return;
+            }
+
+            if (session?.user) {
+              await updateAuthState(session.user, session);
+            }
+          }
+        );
+
+        // Hourly refresh interval
+        refreshInterval = window.setInterval(refreshSession, 60 * 60 * 1000);
+
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        logWithTime('[Auth Initialize] Error', {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        if (mounted) {
+          setState(prev => ({ ...prev, loading: false }));
+        }
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Set up periodic session refresh (every 10 minutes)
-    const refreshInterval = setInterval(refreshSession, 10 * 60 * 1000);
+    initializeAuth();
 
     return () => {
-      console.log('AuthProvider: Cleanup');
+      logWithTime('[Auth Cleanup] Unmounting');
       mounted = false;
-      subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(refreshInterval);
+      if (refreshInterval) clearInterval(refreshInterval);
     };
   }, []);
 
   const signOut = async () => {
     try {
-      console.log('Signing out...');
+      logWithTime('[Sign Out] Starting');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setState({ user: null, role: null, loading: false, session: null });
-      console.log('Sign out successful');
+      logWithTime('[Sign Out] Successful');
     } catch (error) {
-      console.error('Error signing out:', error);
+      logWithTime('[Sign Out] Error', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw error;
     }
   };
 
   if (state.loading) {
-    console.log('AuthProvider: Showing loading spinner');
+    logWithTime('[Auth Provider] Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
