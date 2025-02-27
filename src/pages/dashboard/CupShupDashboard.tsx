@@ -172,6 +172,10 @@
 
 
 
+<<<<<<< Updated upstream
+=======
+// Updated Code 
+>>>>>>> Stashed changes
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -279,6 +283,7 @@ export default function CupshupDashboard() {
   ];
 
   return (
+<<<<<<< Updated upstream
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
@@ -334,8 +339,72 @@ export default function CupshupDashboard() {
                 <ArrowUpRight className="w-5 h-5 text-gray-400" />
               )}
             </div>
+=======
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden p-2"> 
+      {/* Reduced padding from p-4 to p-2 to minimize the gap at the top */}
+      <div className="space-y-2"> 
+        {/* Reduced vertical spacing from space-y-4 to space-y-2 to bring the header closer to the content */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-600"> 
+              {/* Removed mt-1 to reduce the gap between the header and subtitle */}
+              Welcome back to your CupShup dashboard
+            </p>
+>>>>>>> Stashed changes
           </div>
-        ))}
+          <div className="flex flex-wrap gap-2">
+            {/* Buttons for actions */}
+            <Button 
+              onClick={() => navigate('/cupshup/invite/vendor')}
+              className="bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Invite Vendor
+            </Button>
+            <Button 
+              onClick={() => navigate('/cupshup/invite/client')}
+              className="bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Invite Client
+            </Button>
+            <Button 
+              onClick={() => navigate('/cupshup/activities/new')}
+              className="bg-primary text-white hover:bg-primary/90"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              New Activity
+            </Button>
+          </div>
+        </div>
+
+        {/* Grid for stat cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {statCards.map((stat) => (
+            <div
+              key={stat.name}
+              className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow"
+              onClick={() => stat.href && navigate(stat.href)}
+              style={{ cursor: stat.href ? 'pointer' : 'default' }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`${stat.color} p-3 rounded-lg`}>
+                    <stat.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.name}</p>
+                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                  </div>
+                </div>
+                {stat.href && (
+                  <ArrowUpRight className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
