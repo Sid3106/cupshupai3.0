@@ -197,274 +197,274 @@ export default function ActivityForm() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCancel}
-            className="text-gray-600"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Create New Activity
-            </h1>
-            <p className="text-sm text-gray-600">
-              Fill in the activity details below
-            </p>
-          </div>
+    <div className="space-y-4">
+      {/* Header with back button and title */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleCancel}
+          className="text-gray-600 -ml-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-semibold text-[#00A979]">Create New Activity</h1>
+          <p className="text-sm text-gray-600">Fill in the activity details below</p>
         </div>
+      </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-red-600">{error}</div>
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-green-800">Activity created successfully!</p>
-              <p className="text-sm text-green-600">Redirecting to activities list...</p>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="p-4 md:p-6">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-600">{error}</div>
             </div>
-          </div>
-        )}
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Activity created successfully!</p>
+                <p className="text-sm text-green-600">Redirecting to activities list...</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Building2 className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    id="brand"
+                    value={formData.brand}
+                    onChange={(e) => {
+                      setFormData({ ...formData, brand: e.target.value });
+                      setValidationErrors({ ...validationErrors, brand: '' });
+                    }}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
+                      validationErrors.brand ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  >
+                    <option value="">Select a brand</option>
+                    {brands.map((brand) => (
+                      <option key={brand.brand_name} value={brand.brand_name}>
+                        {brand.brand_name}
+                      </option>
+                    ))}
+                  </select>
+                  {validationErrors.brand && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.brand}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => {
+                      setFormData({ ...formData, city: e.target.value });
+                      setValidationErrors({ ...validationErrors, city: '' });
+                    }}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
+                      validationErrors.city ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  >
+                    <option value="">Select a city</option>
+                    {CITY_OPTIONS.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
+                  </select>
+                  {validationErrors.city && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => {
+                      setFormData({ ...formData, location: e.target.value });
+                      setValidationErrors({ ...validationErrors, location: '' });
+                    }}
+                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      validationErrors.location ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    placeholder="Enter specific location"
+                    required
+                  />
+                  {validationErrors.location && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.location}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="startDate"
+                    value={formData.startDate}
+                    min={today}
+                    onChange={(e) => {
+                      setFormData({ ...formData, startDate: e.target.value });
+                      setValidationErrors({ ...validationErrors, startDate: '' });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      validationErrors.startDate ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  />
+                  {validationErrors.startDate && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.startDate}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    id="startTime"
+                    value={formData.startTime}
+                    onChange={(e) => {
+                      setFormData({ ...formData, startTime: e.target.value });
+                      setValidationErrors({ ...validationErrors, startTime: '' });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      validationErrors.startTime ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  />
+                  {validationErrors.startTime && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.startTime}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="endDate"
+                    value={formData.endDate}
+                    min={formData.startDate || today}
+                    onChange={(e) => {
+                      setFormData({ ...formData, endDate: e.target.value });
+                      setValidationErrors({ ...validationErrors, endDate: '' });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      validationErrors.endDate ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  />
+                  {validationErrors.endDate && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.endDate}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+                    End Time <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    id="endTime"
+                    value={formData.endTime}
+                    onChange={(e) => {
+                      setFormData({ ...formData, endTime: e.target.value });
+                      setValidationErrors({ ...validationErrors, endTime: '' });
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                      validationErrors.endTime ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                    required
+                  />
+                  {validationErrors.endTime && (
+                    <p className="mt-1 text-sm text-red-600">{validationErrors.endTime}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div>
-              <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
-                Brand <span className="text-red-500">*</span>
+              <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-1">
+                Instructions <span className="text-red-500">*</span>
               </label>
-              <div className="relative">
-                <Building2 className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <select
-                  id="brand"
-                  value={formData.brand}
-                  onChange={(e) => {
-                    setFormData({ ...formData, brand: e.target.value });
-                    setValidationErrors({ ...validationErrors, brand: '' });
-                  }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
-                    validationErrors.brand ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                >
-                  <option value="">Select a brand</option>
-                  {brands.map((brand) => (
-                    <option key={brand.brand_name} value={brand.brand_name}>
-                      {brand.brand_name}
-                    </option>
-                  ))}
-                </select>
-                {validationErrors.brand && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.brand}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                City <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <select
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => {
-                    setFormData({ ...formData, city: e.target.value });
-                    setValidationErrors({ ...validationErrors, city: '' });
-                  }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary appearance-none ${
-                    validationErrors.city ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                >
-                  <option value="">Select a city</option>
-                  {CITY_OPTIONS.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-                {validationErrors.city && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.city}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                Location <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <MapPin className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => {
-                    setFormData({ ...formData, location: e.target.value });
-                    setValidationErrors({ ...validationErrors, location: '' });
-                  }}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                    validationErrors.location ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  placeholder="Enter specific location"
-                  required
-                />
-                {validationErrors.location && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.location}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="startDate"
-                  value={formData.startDate}
-                  min={today}
-                  onChange={(e) => {
-                    setFormData({ ...formData, startDate: e.target.value });
-                    setValidationErrors({ ...validationErrors, startDate: '' });
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                    validationErrors.startDate ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                />
-                {validationErrors.startDate && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.startDate}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  id="startTime"
-                  value={formData.startTime}
-                  onChange={(e) => {
-                    setFormData({ ...formData, startTime: e.target.value });
-                    setValidationErrors({ ...validationErrors, startTime: '' });
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                    validationErrors.startTime ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                />
-                {validationErrors.startTime && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.startTime}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  id="endDate"
-                  value={formData.endDate}
-                  min={formData.startDate || today}
-                  onChange={(e) => {
-                    setFormData({ ...formData, endDate: e.target.value });
-                    setValidationErrors({ ...validationErrors, endDate: '' });
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                    validationErrors.endDate ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                />
-                {validationErrors.endDate && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.endDate}</p>
-                )}
-              </div>
-              <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-                  End Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  id="endTime"
-                  value={formData.endTime}
-                  onChange={(e) => {
-                    setFormData({ ...formData, endTime: e.target.value });
-                    setValidationErrors({ ...validationErrors, endTime: '' });
-                  }}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                    validationErrors.endTime ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                  required
-                />
-                {validationErrors.endTime && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.endTime}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label htmlFor="instructions" className="block text-sm font-medium text-gray-700 mb-1">
-              Instructions <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="instructions"
-              value={formData.instructions}
-              onChange={(e) => {
-                setFormData({ ...formData, instructions: e.target.value });
-                setValidationErrors({ ...validationErrors, instructions: '' });
-              }}
-              rows={4}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-                validationErrors.instructions ? 'border-red-300' : 'border-gray-200'
-              }`}
-              placeholder="Add activity instructions or notes..."
-              required
-            />
-            {validationErrors.instructions && (
-              <p className="mt-1 text-sm text-red-600">{validationErrors.instructions}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end space-x-4 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || success}
-              className="bg-primary text-white hover:bg-primary/90"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  <Save className="w-5 h-5 mr-2" />
-                  Create Activity
-                </>
+              <textarea
+                id="instructions"
+                value={formData.instructions}
+                onChange={(e) => {
+                  setFormData({ ...formData, instructions: e.target.value });
+                  setValidationErrors({ ...validationErrors, instructions: '' });
+                }}
+                rows={4}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+                  validationErrors.instructions ? 'border-red-300' : 'border-gray-200'
+                }`}
+                placeholder="Add activity instructions or notes..."
+                required
+              />
+              {validationErrors.instructions && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.instructions}</p>
               )}
-            </Button>
-          </div>
-        </form>
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-end gap-3 md:gap-4 pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                className="w-full md:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading || success}
+                className="w-full md:w-auto bg-primary text-white hover:bg-primary/90"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-5 h-5 mr-2" />
+                    Create Activity
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

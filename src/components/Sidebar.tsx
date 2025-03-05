@@ -115,7 +115,7 @@ export default function Sidebar() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-gray-500 hover:text-gray-600"
+            className="text-gray-500 hover:text-gray-600 flex items-center justify-center"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={isMobileMenuOpen}
@@ -133,7 +133,7 @@ export default function Sidebar() {
       {/* Mobile menu drawer */}
       <div
         className={cn(
-          "fixed inset-0 z-40 lg:hidden",
+          "fixed inset-0 z-50 lg:hidden", // Increased z-index to ensure it's above other elements
           isMobileMenuOpen ? "block" : "hidden"
         )}
       >
@@ -150,7 +150,7 @@ export default function Sidebar() {
         {/* Drawer panel */}
         <div 
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-[280px] overflow-y-auto bg-primary transform transition-transform duration-300 ease-in-out",
+            "fixed inset-y-0 left-0 z-50 w-[280px] overflow-y-auto bg-primary transform transition-transform duration-300 ease-in-out",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}
           role="dialog"
@@ -165,7 +165,7 @@ export default function Sidebar() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-white hover:text-white/80"
+              className="text-white hover:text-white/80 flex items-center justify-center"
               onClick={() => setIsMobileMenuOpen(false)}
               aria-label="Close menu"
             >

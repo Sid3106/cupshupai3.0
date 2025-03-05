@@ -21,7 +21,7 @@ export default function DashboardLayout() {
 
         {/* Main content */}
         <main className="flex-1">
-          <div className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8 mt-16 lg:mt-0">
+          <div className="py-4 sm:py-6 px-4 sm:px-6 lg:px-8 mt-4 lg:mt-0 max-w-full overflow-x-hidden">
             <Outlet />
           </div>
         </main>
