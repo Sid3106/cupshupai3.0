@@ -118,48 +118,48 @@ export default function VendorActivityDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-4">
       {/* Header with back button */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => navigate('/vendor/my-activities')}
-          className="text-gray-600"
+          className="text-gray-600 -ml-3"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Activity Details</h1>
+          <h1 className="text-2xl font-semibold text-[#00A979]">Activity Details</h1>
           <p className="text-sm text-gray-600">View activity information and add tasks</p>
         </div>
       </div>
 
       {/* Activity Details Card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        {/* Status Banner */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        {/* Brand and Status */}
+        <div className="px-4 py-3 sm:px-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-primary" />
+            <Building2 className="w-5 h-5 text-[#00A979]" />
             <span className="font-medium text-gray-900">{activity.brand}</span>
           </div>
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-            activity.status === 'completed' ? 'bg-green-100 text-green-800' :
-            activity.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-            activity.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-            'bg-yellow-100 text-yellow-800'
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            activity.status === 'completed' ? 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20' :
+            activity.status === 'in_progress' ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-700/10' :
+            activity.status === 'cancelled' ? 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/10' :
+            'bg-yellow-50 text-yellow-800 ring-1 ring-inset ring-yellow-600/20'
           }`}>
-            {activity.status === 'completed' && <CheckCircle2 className="w-4 h-4" />}
-            {activity.status === 'pending' && <AlertCircle className="w-4 h-4" />}
-            {activity.status === 'in_progress' && <Clock className="w-4 h-4" />}
+            {activity.status === 'completed' && <CheckCircle2 className="w-3 h-3" />}
+            {activity.status === 'pending' && <AlertCircle className="w-3 h-3" />}
+            {activity.status === 'in_progress' && <Clock className="w-3 h-3" />}
             {activity.status.charAt(0).toUpperCase() + activity.status.slice(1).replace('_', ' ')}
           </span>
         </div>
 
         {/* Main Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Location & Date */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Location</h3>
@@ -201,12 +201,12 @@ export default function VendorActivityDetail() {
           </div>
 
           {/* Add Task Button */}
-          <div className="pt-6 border-t border-gray-100">
+          <div className="pt-4 sm:pt-6 border-t border-gray-100">
             <Button
               onClick={() => navigate(`/vendor/activities/${activity.id}/tasks/new`)}
-              className="w-full bg-primary text-white hover:bg-primary/90 h-12"
+              className="w-full bg-[#00A979] text-white hover:bg-[#00A979]/90 h-10"
             >
-              <PlusCircle className="w-5 h-5 mr-2" />
+              <PlusCircle className="w-4 h-4 mr-2" />
               Add New Task
             </Button>
           </div>
