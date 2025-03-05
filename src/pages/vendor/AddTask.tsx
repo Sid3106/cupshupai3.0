@@ -225,19 +225,19 @@ export default function AddTask() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={() => navigate(`/vendor/activities/${activityId}`)}
-          className="text-gray-600"
+          className="text-gray-600 -ml-3"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Add New Task</h1>
+          <h1 className="text-2xl font-semibold text-[#00A979]">Add New Task</h1>
           <p className="text-sm text-gray-600">Create a new task for this activity</p>
         </div>
       </div>
@@ -263,20 +263,20 @@ export default function AddTask() {
 
       {/* Task Form */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           {/* Customer Name */}
           <div>
             <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-1">
               Customer Name
             </label>
             <div className="relative">
-              <User className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 id="customer_name"
                 value={formData.customer_name}
                 onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A979]/20 focus:border-[#00A979]"
                 placeholder="Enter customer name"
                 required
               />
@@ -289,13 +289,13 @@ export default function AddTask() {
               Customer Phone Number
             </label>
             <div className="relative">
-              <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="tel"
                 id="customer_number"
                 value={formData.customer_number}
                 onChange={(e) => setFormData({ ...formData, customer_number: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A979]/20 focus:border-[#00A979]"
                 placeholder="Enter phone number"
                 required
               />
@@ -305,69 +305,76 @@ export default function AddTask() {
           {/* Order Image Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Order Image {processingOcr && <span className="text-primary ml-2">(Processing...)</span>}
+              Order Image
             </label>
-            <div className="space-y-4">
-              {/* File Upload Button */}
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <div className="relative">
+                  <Upload className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    capture="environment"
-                    disabled={processingOcr}
+                    type="text"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 cursor-not-allowed"
+                    placeholder="Choose File or Take Photo"
+                    value={formData.order_image ? formData.order_image.name : ''}
+                    readOnly
                   />
-                  <div className="w-full h-12 border border-gray-200 rounded-lg flex items-center justify-center gap-2 text-gray-600 hover:bg-gray-50">
-                    <Upload className="w-5 h-5" />
-                    <span>Choose File</span>
-                  </div>
                 </div>
+              </div>
+              <div className="flex gap-2">
+                {/* File Upload Button */}
                 <div className="relative">
                   <input
                     type="file"
+                    id="file-upload"
                     accept="image/*"
                     onChange={handleImageChange}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    capture="environment"
-                    disabled={processingOcr}
                   />
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-12 px-4"
-                    disabled={processingOcr}
+                    className="h-10 px-4 border-gray-200"
+                    title="Upload from gallery"
                   >
-                    <Camera className="w-5 h-5" />
+                    <Upload className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-
-              {/* Image Preview */}
-              {imagePreview && (
-                <div className="relative rounded-lg overflow-hidden border border-gray-200">
-                  <img
-                    src={imagePreview}
-                    alt="Order preview"
-                    className="w-full h-48 object-cover"
+                {/* Camera Button */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="camera-upload"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
                   <Button
                     type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      setFormData({ ...formData, order_image: null });
-                      setImagePreview(null);
-                    }}
-                    disabled={processingOcr}
+                    variant="outline"
+                    className="h-10 px-4 border-gray-200"
+                    title="Take photo"
                   >
-                    Remove
+                    <Camera className="w-4 h-4" />
                   </Button>
                 </div>
-              )}
+              </div>
             </div>
+            {processingOcr && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-gray-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing image...</span>
+              </div>
+            )}
+            {imagePreview && (
+              <div className="mt-2">
+                <img
+                  src={imagePreview}
+                  alt="Order preview"
+                  className="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                />
+              </div>
+            )}
           </div>
 
           {/* Order ID */}
@@ -376,30 +383,30 @@ export default function AddTask() {
               Order ID
             </label>
             <div className="relative">
-              <ShoppingBag className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <ShoppingBag className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 id="order_id"
                 value={formData.order_id}
                 onChange={(e) => setFormData({ ...formData, order_id: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00A979]/20 focus:border-[#00A979]"
                 placeholder="Enter order ID (optional)"
               />
             </div>
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-2">
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-white hover:bg-primary/90 h-12"
+              className="w-full bg-[#00A979] text-white hover:bg-[#00A979]/90 h-10"
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <Save className="w-5 h-5 mr-2" />
+                  <Save className="w-4 h-4 mr-2" />
                   Save Task
                 </>
               )}
