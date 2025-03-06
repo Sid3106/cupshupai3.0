@@ -10,6 +10,7 @@ import {
 import { cn } from '../lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
+import { UserNav } from './UserNav';
 
 const navigation = [
   {
@@ -98,7 +99,7 @@ export default function VendorSidebar() {
   return (
     <>
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:hidden">
+      <div className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:hidden">
         <div className="flex items-center gap-x-4">
           <Button
             variant="ghost"
@@ -116,12 +117,13 @@ export default function VendorSidebar() {
             alt="CupShup"
           />
         </div>
+        <UserNav />
       </div>
 
       {/* Mobile menu drawer */}
       <div
         className={cn(
-          "fixed inset-0 z-40 lg:hidden",
+          "fixed inset-0 z-50 lg:hidden",
           isMobileMenuOpen ? "block" : "hidden"
         )}
       >
@@ -138,7 +140,7 @@ export default function VendorSidebar() {
         {/* Drawer panel */}
         <div 
           className={cn(
-            "fixed inset-y-0 left-0 z-40 w-[280px] overflow-y-auto bg-primary transform transition-transform duration-300 ease-in-out",
+            "fixed inset-y-0 left-0 z-50 w-[280px] overflow-y-auto bg-primary transform transition-transform duration-300 ease-in-out",
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}
           role="dialog"

@@ -68,6 +68,7 @@ export function UserNav() {
         forceMount
         sideOffset={8}
         alignOffset={-4}
+        style={{ zIndex: 100 }}
       >
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">

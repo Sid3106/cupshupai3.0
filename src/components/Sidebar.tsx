@@ -12,6 +12,7 @@ import {
 import { cn } from '../lib/utils';
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
+import { UserNav } from './UserNav';
 
 const navigation = [
   {
@@ -110,7 +111,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:hidden">
+      <div className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:hidden">
         <div className="flex items-center gap-x-4">
           <Button
             variant="ghost"
@@ -128,12 +129,13 @@ export default function Sidebar() {
             alt="CupShup"
           />
         </div>
+        <UserNav />
       </div>
 
       {/* Mobile menu drawer */}
       <div
         className={cn(
-          "fixed inset-0 z-50 lg:hidden", // Increased z-index to ensure it's above other elements
+          "fixed inset-0 z-50 lg:hidden",
           isMobileMenuOpen ? "block" : "hidden"
         )}
       >
