@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 import VendorLayout from './layouts/VendorLayout';
+import ClientLayout from './layouts/ClientLayout';
 import Login from './pages/auth/Login';
 import SignUp from './pages/auth/SignUp';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -27,6 +28,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AddTask from './pages/vendor/AddTask';
 import VendorActivityDetail from './pages/vendor/VendorActivityDetail';
+import ClientDashboard from './pages/client/dashboard';
+import ClientProfile from './pages/client/profile';
 
 function App() {
   return (
@@ -78,6 +81,15 @@ function App() {
                 <Route path="my-tasks" element={<MyTasks />} />
                 <Route path="activities/:id" element={<VendorActivityDetail />} />
                 <Route path="activities/:id/tasks/new" element={<AddTask />} />
+              </Route>
+            </Route>
+
+            {/* Client routes */}
+            <Route element={<ProtectedRoute allowedRoles={['Client']} />}>
+              <Route path="/client" element={<ClientLayout />}>
+                <Route index element={<ClientDashboard />} />
+                <Route path="dashboard" element={<ClientDashboard />} />
+                <Route path="profile" element={<ClientProfile />} />
               </Route>
             </Route>
           </Routes>

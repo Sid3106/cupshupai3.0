@@ -124,3 +124,52 @@ export async function sendActivityAssignmentEmail(params: {
     };
   }
 }
+
+interface InviteClientParams {
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  brandName: string;
+}
+
+interface InviteClientResponse {
+  success: boolean;
+  error?: string;
+  userId?: string;
+  message?: string;
+}
+
+export async function inviteClient(params: InviteClientParams): Promise<InviteClientResponse> {
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/test-client-invite`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
+      }
+    );
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to create client');
+    }
+
+    return {
+      success: true,
+      userId: data.userId,
+      message: data.message || 'Client created successfully'
+    };
+
+  } catch (error) {
+    console.error('Error in inviteClient:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}

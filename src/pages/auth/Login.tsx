@@ -14,18 +14,26 @@ export default function Login() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[Login] Starting sign in process...');
     setLoading(true);
     setError(null);
 
     const result = await signIn(email, password, rememberMe);
     
     if (result.error) {
+      console.error('[Login] Sign in error:', result.error);
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    navigate('/');
+    console.log('[Login] Sign in successful, navigating to home...');
+    try {
+      navigate('/');
+      console.log('[Login] Navigation complete');
+    } catch (navError) {
+      console.error('[Login] Navigation error:', navError);
+    }
   };
 
   return (

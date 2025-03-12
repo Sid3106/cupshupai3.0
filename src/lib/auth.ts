@@ -91,6 +91,9 @@ export const signUp = async (email: string, password: string) => {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          role: 'Client'
+        }
       }
     });
 
@@ -106,37 +109,50 @@ export const signUp = async (email: string, password: string) => {
 
 // Sign in with email
 export const signIn = async (email: string, password: string, rememberMe: boolean = false) => {
+  console.log('[Auth] Starting sign in process for:', email);
+  
   // Check rate limiting
   const { allowed, waitTime } = checkLoginAttempts(email);
   if (!allowed) {
+    console.log('[Auth] Rate limit exceeded. Wait time:', waitTime);
     return { 
       error: `Too many login attempts. Please try again in ${waitTime} minutes.`
     };
   }
 
   try {
+    console.log('[Auth] Attempting Supabase authentication...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      console.error('[Auth] Supabase auth error:', error);
       recordLoginAttempt(email, false);
       throw error;
     }
+
+    console.log('[Auth] Authentication successful:', {
+      user: data.user?.id,
+      role: data.user?.user_metadata?.role,
+      session: !!data.session
+    });
 
     recordLoginAttempt(email, true);
 
     // Handle remember me
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
+      console.log('[Auth] Remember me enabled');
     } else {
       localStorage.removeItem('rememberMe');
+      console.log('[Auth] Remember me disabled');
     }
 
     return { data, success: true };
   } catch (error) {
-    console.error('Sign in error:', error);
+    console.error('[Auth] Sign in error:', error);
     return { 
       error: error instanceof Error ? error.message : 'An error occurred during sign in'
     };

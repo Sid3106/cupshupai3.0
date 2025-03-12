@@ -6,12 +6,25 @@ import type { UserRole } from '../types/database';
 
 interface AuthState {
   user: User | null;
-  role: UserRole | null;
+  profile: Profile | null;
   loading: boolean;
   session: Session | null;
 }
 
-interface AuthContextType extends AuthState {
+interface Profile {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  created_at: string;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -29,7 +42,7 @@ let refreshAttemptId = 0;
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    role: null,
+    profile: null,
     loading: true,
     session: null
   });
@@ -40,46 +53,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function updateAuthState(user: User | null, session: Session | null) {
     const updateId = Date.now().toString();
     
-    // Check if there's already an ongoing fetch
-    if (user && profileFetchRef.current[user.id]) {
-      logWithTime(`[Auth State Update ${updateId}] Skipping duplicate fetch for user ${user.id}`);
-      return;
-    }
-
-    logWithTime(`[Auth State Update ${updateId}] Starting`, {
-      existingState: {
-        userId: state.user?.id,
-        role: state.role,
-        hasSession: !!state.session
-      },
-      newUser: user?.id,
-      sessionExpiry: session?.expires_at
-    });
-
     try {
       if (!user) {
         logWithTime(`[Auth State Update ${updateId}] No user, clearing state`);
-        setState({ user: null, role: null, loading: false, session: null });
+        setState({ user: null, profile: null, loading: false, session: null });
         return;
       }
 
       // Mark this user's fetch as ongoing
       profileFetchRef.current[user.id] = true;
 
-      // Set a timeout using Promise.race
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 10000);
-      });
-
       const profilePromise = supabase
         .from('profiles')
-        .select('role')
+        .select('*')  // Select all profile fields
         .eq('user_id', user.id)
         .single();
 
       const { data: profile, error: profileError } = await Promise.race([
         profilePromise,
-        timeoutPromise
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+        )
       ]) as any;
 
       // Clear the ongoing fetch marker
@@ -108,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setState({
         user,
-        role: profile?.role ?? null,
+        profile,
         loading: false,
         session
       });
@@ -143,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logWithTime(`[Session Refresh ${currentAttemptId}] Starting`, {
       currentState: {
         userId: state.user?.id,
-        role: state.role,
+        role: state.profile?.role,
         hasSession: !!state.session
       }
     });
@@ -219,7 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
 
             if (event === 'SIGNED_OUT') {
-              setState({ user: null, role: null, loading: false, session: null });
+              setState({ user: null, profile: null, loading: false, session: null });
               return;
             }
 
@@ -254,19 +248,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signOut = async () => {
-    try {
-      logWithTime('[Sign Out] Starting');
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setState({ user: null, role: null, loading: false, session: null });
-      logWithTime('[Sign Out] Successful');
-    } catch (error) {
-      logWithTime('[Sign Out] Error', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+  const contextValue: AuthContextType = {
+    user: state.user,
+    profile: state.profile,
+    isLoading: state.loading,
+    signIn: async (email: string, password: string) => {
+      try {
+        setState(prev => ({ ...prev, loading: true }));
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        
+        // Update auth state with the new session
+        if (data.user && data.session) {
+          await updateAuthState(data.user, data.session);
+        }
+      } catch (error) {
+        setState(prev => ({ ...prev, loading: false }));
+        console.error('Error signing in:', error);
+        throw error;
+      }
+    },
+    signOut: async () => {
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        setState({ user: null, profile: null, loading: false, session: null });
+        logWithTime('[Sign Out] Successful');
+      } catch (error) {
+        console.error('Error signing out:', error);
+        throw error;
+      }
+    },
+    refreshSession
   };
 
   if (state.loading) {
@@ -279,7 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, signOut, refreshSession }}>
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

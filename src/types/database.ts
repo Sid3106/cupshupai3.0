@@ -435,4 +435,4 @@ export type CompositeTypes<
     ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-export type UserRole = 'CupShup' | 'Vendor' | 'Client';
+export type UserRole = 'Client' | 'Vendor' | 'Admin' | 'CupShup';

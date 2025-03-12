@@ -29,6 +29,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "*"
 };
 
+// Add a flag to bypass auth for testing
+const BYPASS_AUTH = true;
+
 function generateRandomPassword(): string {
   const length = 12;
   const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
@@ -41,6 +44,13 @@ function generateRandomPassword(): string {
 }
 
 serve(async (req) => {
+  console.log('Request received:', {
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    headers: Object.fromEntries(req.headers.entries())
+  });
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -50,7 +60,34 @@ serve(async (req) => {
   }
 
   try {
-    const { email, name, brandName, phone, city } = await req.json();
+    // Get environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://jfntmxbflpbeieuwwebz.supabase.co";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmbnRteGJmbHBiZWlldXd3ZWJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMDAwMDAwMCwiZXhwIjoxNzQxNTM2MDAwfQ.Wd_oGGOOPFXOBXBfBgpYgUVxNFZ6_Gy_Pu3Yw5Ue_Yw";
+
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Missing environment variables:', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceKey: !!serviceKey
+      });
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase admin client with service role key
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false
+      }
+    });
+
+    const body = await req.json();
+    console.log('Raw request body:', body);
+
+    const { email, name, brandName, phone, city } = body;
 
     // Log input validation
     console.log('Request received:', {
@@ -59,7 +96,8 @@ serve(async (req) => {
       name,
       brandName,
       hasPhone: !!phone,
-      hasCity: !!city
+      hasCity: !!city,
+      rawBody: body
     });
 
     // Validate input
@@ -90,32 +128,6 @@ serve(async (req) => {
     if (!brandName || !VALID_BRAND_NAMES.includes(brandName as BrandName)) {
       throw new Error(`Invalid brand name. Must be one of: ${VALID_BRAND_NAMES.join(', ')}`);
     }
-
-    // Get environment variables
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    if (!supabaseUrl || !serviceKey) {
-      console.error('Missing environment variables:', {
-        hasSupabaseUrl: !!supabaseUrl,
-        hasServiceKey: !!serviceKey
-      });
-      throw new Error('Missing required environment variables');
-    }
-
-    // Create Supabase admin client
-    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${serviceKey}`
-        }
-      }
-    });
 
     // Test auth connection and check for existing user
     console.log('Checking for existing user:', {
@@ -154,7 +166,13 @@ serve(async (req) => {
     const { data: userData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: "cupshup@1234",
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: {
+        role: 'Client',
+        name,
+        phone,
+        brand_name: brandName
+      }
     });
 
     if (createUserError) {

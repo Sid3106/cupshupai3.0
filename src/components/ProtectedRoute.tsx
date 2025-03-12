@@ -8,10 +8,10 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
-  const { user, role, loading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -23,9 +23,16 @@ export default function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(role as UserRole)) {
+  if (allowedRoles && !allowedRoles.includes(profile?.role as UserRole)) {
     // Redirect to appropriate dashboard based on role
-    const redirectPath = role === 'Vendor' ? '/vendor' : '/cupshup';
+    const roleRedirects: Record<UserRole, string> = {
+      CupShup: '/cupshup',
+      Vendor: '/vendor',
+      Client: '/client',
+      Admin: '/cupshup' // Admin defaults to CupShup dashboard
+    };
+    
+    const redirectPath = profile?.role ? roleRedirects[profile.role] : '/login';
     return <Navigate to={redirectPath} replace />;
   }
 
