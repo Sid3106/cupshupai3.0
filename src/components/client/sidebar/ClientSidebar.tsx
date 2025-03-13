@@ -3,7 +3,8 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  User
+  User,
+  ClipboardList
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { useState } from 'react';
@@ -17,9 +18,9 @@ const navigation = [
     icon: LayoutDashboard
   },
   {
-    name: 'Profile',
-    href: '/client/profile',
-    icon: User
+    name: 'Tasks',
+    href: '/client/tasks',
+    icon: ClipboardList
   }
 ];
 
@@ -51,15 +52,13 @@ export default function ClientSidebar() {
   return (
     <>
       {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4 sm:px-6 lg:hidden">
+      <div className="sticky top-0 z-40 flex h-16 items-center justify-between bg-white px-4 sm:px-6 lg:hidden">
         <div className="flex items-center gap-x-4">
           <Button
             variant="ghost"
             size="icon"
             className="text-gray-500 hover:text-gray-600"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={isMobileMenuOpen}
           >
             <Menu className="h-6 w-6" />
           </Button>

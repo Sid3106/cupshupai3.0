@@ -30,6 +30,7 @@ import AddTask from './pages/vendor/AddTask';
 import VendorActivityDetail from './pages/vendor/VendorActivityDetail';
 import ClientDashboard from './pages/client/dashboard';
 import ClientProfile from './pages/client/profile';
+import BrandTasks from './pages/client/BrandTasks';
 
 function App() {
   return (
@@ -51,7 +52,6 @@ function App() {
             {/* Common routes for authenticated users */}
             <Route element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
-                <Route path="/profile" element={<Profile />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
@@ -60,6 +60,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['CupShup']} />}>
               <Route path="/cupshup" element={<DashboardLayout />}>
                 <Route index element={<CupShupDashboard />} />
+                <Route path="profile" element={<Profile />} />
                 <Route path="vendors" element={<VendorList />} />
                 <Route path="clients" element={<ClientList />} />
                 <Route path="activities" element={<ActivityList />} />
@@ -76,6 +77,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['Vendor']} />}>
               <Route path="/vendor" element={<VendorLayout />}>
                 <Route index element={<VendorDashboard />} />
+                <Route path="profile" element={<Profile />} />
                 <Route path="activities" element={<VendorActivityList />} />
                 <Route path="my-activities" element={<MyActivities />} />
                 <Route path="my-tasks" element={<MyTasks />} />
@@ -90,6 +92,7 @@ function App() {
                 <Route index element={<ClientDashboard />} />
                 <Route path="dashboard" element={<ClientDashboard />} />
                 <Route path="profile" element={<ClientProfile />} />
+                <Route path="tasks" element={<BrandTasks />} />
               </Route>
             </Route>
           </Routes>

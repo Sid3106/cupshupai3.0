@@ -12,9 +12,11 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { supabase } from "../lib/supabase";
+import { useAuth } from '../contexts/AuthContext';
 
 export function UserNav() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [userEmail, setUserEmail] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -43,6 +45,19 @@ export function UserNav() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/login');
+  };
+
+  const getProfilePath = () => {
+    switch (profile?.role) {
+      case 'Client':
+        return '/client/profile';
+      case 'Vendor':
+        return '/vendor/profile';
+      case 'CupShup':
+        return '/cupshup/profile';
+      default:
+        return '/login';
+    }
   };
 
   return (
@@ -82,7 +97,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <DropdownMenuItem 
             className="cursor-pointer"
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(getProfilePath())}
           >
             Profile
           </DropdownMenuItem>

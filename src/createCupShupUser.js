@@ -36,37 +36,51 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var supabase_js_1 = require("@supabase/supabase-js");
+import { createClient } from '@supabase/supabase-js';
 // 🚀 Connect to Supabase using Admin Access
-var supabaseAdmin = (0, supabase_js_1.createClient)("https://jfntmxbflpbeieuwwebz.supabase.co", // Replace with your actual Supabase URL
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmbnRteGJmbHBiZWlldXd3ZWJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzYyNTUxMSwiZXhwIjoyMDUzMjAxNTExfQ.BS-feCBNWIkjxKMwkQEnNOfKZ_15HlOBrBFeZyDmi-Q", // Replace with your Supabase Service Role Key
-{
+const supabaseAdmin = createClient(
+  "https://jfntmxbflpbeieuwwebz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpmbnRteGJmbHBiZWlldXd3ZWJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczNzYyNTUxMSwiZXhwIjoyMDUzMjAxNTExfQ.BS-feCBNWIkjxKMwkQEnNOfKZ_15HlOBrBFeZyDmi-Q",
+  {
     auth: { autoRefreshToken: false, persistSession: false },
-});
+  }
+);
 // 🎯 Function to manually create a CupShup user
-function createCupShupUser() {
-    return __awaiter(this, void 0, void 0, function () {
-        var _a, data, error;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0: return [4 /*yield*/, supabaseAdmin.auth.admin.createUser({
-                        email: "nikhil@cupshup.co.in", // Change this if needed
-                        password: "cupshup@1234", // Change this if needed
-                        email_confirm: true,
-                        user_metadata: { role: "CupShup" } // Assigning role CupShup
-                    })];
-                case 1:
-                    _a = _b.sent(), data = _a.data, error = _a.error;
-                    if (error) {
-                        console.error("❌ Failed to create user:", error);
-                    }
-                    else {
-                        console.log("✅ User created successfully:", data);
-                    }
-                    return [2 /*return*/];
-            }
-        });
+async function createCupShupUser() {
+  try {
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      email: "akash@cupshup.co.in",
+      password: "cupshup@1234",
+      email_confirm: true,
+      user_metadata: { role: "CupShup" }
     });
+
+    if (error) {
+      console.error("❌ Failed to create user:", error);
+    } else {
+      console.log("✅ User created successfully:", data);
+      
+      // Create profile entry
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert([
+          {
+            user_id: data.user.id,
+            email: data.user.email,
+            role: 'CupShup',
+            name: 'Akash'
+          }
+        ]);
+      
+      if (profileError) {
+        console.error("❌ Failed to create profile:", profileError);
+      } else {
+        console.log("✅ Profile created successfully");
+      }
+    }
+  } catch (err) {
+    console.error("❌ Error:", err);
+  }
 }
 // 🚀 Run the function
 createCupShupUser();

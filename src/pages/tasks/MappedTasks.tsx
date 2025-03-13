@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { supabase } from '../../lib/supabase';
+import { format } from 'date-fns';
 import { 
   Search,
   Loader2,
@@ -10,7 +11,10 @@ import {
   ShoppingBag,
   Building2,
   ChevronRight,
-  MapPin
+  MapPin,
+  Download,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,12 +36,30 @@ interface Task {
   } | null;
 }
 
+interface Filters {
+  location: string;
+  city: string;
+  startDate: string;
+  endDate: string;
+}
+
 export default function MappedTasks() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<Filters>({
+    location: '',
+    city: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [uniqueLocations, setUniqueLocations] = useState<string[]>([]);
+  const [uniqueCities, setUniqueCities] = useState<string[]>([]);
+
+  const ITEMS_PER_PAGE = 25;
 
   useEffect(() => {
     const fetchAllTasks = async () => {
@@ -65,7 +87,6 @@ export default function MappedTasks() {
 
         if (error) throw error;
         
-        // Transform the data to match our Task interface
         const transformedTasks: Task[] = (data || []).map(task => ({
           id: task.id,
           customer_name: task.customer_name,
@@ -84,6 +105,12 @@ export default function MappedTasks() {
         }));
 
         setTasks(transformedTasks);
+
+        // Extract unique locations and cities
+        const locations = [...new Set(transformedTasks.map(task => task.activity?.location).filter(Boolean))];
+        const cities = [...new Set(transformedTasks.map(task => task.activity?.city).filter(Boolean))];
+        setUniqueLocations(locations as string[]);
+        setUniqueCities(cities as string[]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch tasks');
       } finally {
@@ -94,14 +121,55 @@ export default function MappedTasks() {
     fetchAllTasks();
   }, [user]);
 
-  // Update the filter to handle potentially null values
-  const filteredTasks = tasks.filter(task => 
-    task.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.activity?.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.activity?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.vendor?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTasks = tasks.filter(task => {
+    const matchesSearch = 
+      task.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.order_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(task.customer_number).includes(searchTerm);
+
+    const matchesLocation = !filters.location || task.activity?.location === filters.location;
+    const matchesCity = !filters.city || task.activity?.city === filters.city;
+    
+    const taskDate = task.created_at ? new Date(task.created_at) : null;
+    const matchesDateRange = (!filters.startDate || !filters.endDate || !taskDate) ? true : (
+      taskDate >= new Date(filters.startDate) && 
+      taskDate <= new Date(filters.endDate)
+    );
+
+    return matchesSearch && matchesLocation && matchesCity && matchesDateRange;
+  });
+
+  const totalPages = Math.ceil(filteredTasks.length / ITEMS_PER_PAGE);
+  const paginatedTasks = filteredTasks.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
+
+  const downloadCSV = () => {
+    const headers = ['Customer Name', 'Customer Number', 'Order Image URL', 'Order ID', 'Location', 'Date Created'];
+    const csvData = filteredTasks.map(task => [
+      task.customer_name,
+      task.customer_number,
+      task.order_image_url,
+      task.order_id || '',
+      `${task.activity?.city || ''} - ${task.activity?.location || ''}`,
+      task.created_at ? format(new Date(task.created_at), 'yyyy-MM-dd HH:mm:ss') : ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `mapped-tasks-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (loading) {
     return (
@@ -130,7 +198,6 @@ export default function MappedTasks() {
 
   return (
     <div className="space-y-6">
-      {/* Header with centered title on mobile */}
       <div className="flex flex-col items-center text-center md:text-left md:flex-row md:justify-between md:items-center">
         <div className="w-full md:w-auto mb-4 md:mb-0">
           <h1 className="text-2xl font-semibold text-[#00A979] text-center md:text-left">Mapped Tasks</h1>
@@ -140,26 +207,77 @@ export default function MappedTasks() {
         </div>
       </div>
 
-      {/* Search and Filters - Full width on mobile */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="p-4 md:p-6">
-          {/* Search */}
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
+          {/* Search and Filters */}
+          <div className="flex flex-col space-y-4 md:space-y-0 md:flex-row md:items-center md:space-x-4 mb-6">
+            {/* Search Input */}
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by customer name, order ID, brand, city or vendor email..."
+                placeholder="Search by name, number or order ID..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
+
+            {/* Location and City Filters */}
+            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+              <select
+                value={filters.location}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="">All Locations</option>
+                {uniqueLocations.map(location => (
+                  <option key={location} value={location}>{location}</option>
+                ))}
+              </select>
+
+              <select
+                value={filters.city}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+                className="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              >
+                <option value="">All Cities</option>
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date Range Filters */}
+            <div className="flex space-x-2">
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full md:w-36 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full md:w-36 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+            </div>
+
+            {/* Download Button */}
+            <Button
+              onClick={downloadCSV}
+              variant="outline"
+              className="w-full md:w-auto text-primary hover:text-primary/80"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </Button>
           </div>
 
           {/* Tasks List */}
           <div className="overflow-x-auto">
-            {tasks.length === 0 ? (
+            {paginatedTasks.length === 0 ? (
               <div className="text-center py-12">
                 <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
                   <ClipboardList className="w-6 h-6 text-primary" />
@@ -173,7 +291,7 @@ export default function MappedTasks() {
               <>
                 {/* Mobile View */}
                 <div className="md:hidden space-y-4">
-                  {filteredTasks.map((task) => (
+                  {paginatedTasks.map((task) => (
                     <div
                       key={task.id}
                       className="bg-white rounded-lg border border-gray-200 p-4 space-y-3"
@@ -189,7 +307,6 @@ export default function MappedTasks() {
                             <span className="text-gray-600">{task.customer_number}</span>
                           </div>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
                       </div>
 
                       <div className="space-y-2">
@@ -204,17 +321,13 @@ export default function MappedTasks() {
                             rel="noopener noreferrer"
                             className="text-primary text-sm hover:underline block ml-6"
                           >
-                            View Image
+                            View Order Image
                           </a>
                         )}
                       </div>
 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-900 font-medium">{task.activity?.brand}</span>
-                        </div>
-                        <div className="flex items-center gap-2 ml-6">
                           <MapPin className="w-4 h-4 text-gray-400" />
                           <span className="text-gray-600">
                             {task.activity?.city} - {task.activity?.location}
@@ -222,14 +335,9 @@ export default function MappedTasks() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <CalendarDays className="w-4 h-4 text-gray-400" />
-                          {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
-                        </div>
-                        <div className="text-gray-600">
-                          {task.vendor?.email || 'N/A'}
-                        </div>
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <CalendarDays className="w-4 h-4 text-gray-400" />
+                        {task.created_at ? format(new Date(task.created_at), 'MMM d, yyyy HH:mm') : 'N/A'}
                       </div>
                     </div>
                   ))}
@@ -240,68 +348,50 @@ export default function MappedTasks() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-100">
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Customer Details</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Order Info</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Activity Details</th>
-                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Vendor</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Customer Name</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Customer Number</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Order Image</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Order ID</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Location</th>
                         <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Date Created</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredTasks.map((task) => (
-                        <tr key={task.id} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-4 px-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-900 font-medium">{task.customer_name}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-600">{task.customer_number}</span>
-                              </div>
+                      {paginatedTasks.map((task) => (
+                        <tr key={task.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                          <td className="py-3 px-4">
+                            <span className="text-gray-900">{task.customer_name}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-gray-600">{task.customer_number}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            {task.order_image_url && (
+                              <a
+                                href={task.order_image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                View Order Image
+                              </a>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <ShoppingBag className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-900">{task.order_id || 'N/A'}</span>
                             </div>
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <ShoppingBag className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-900">{task.order_id || 'N/A'}</span>
-                              </div>
-                              {task.order_image_url && (
-                                <a
-                                  href={task.order_image_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary text-sm hover:underline block ml-6"
-                                >
-                                  View Image
-                                </a>
-                              )}
-                            </div>
+                          <td className="py-3 px-4">
+                            <span className="text-gray-600">
+                              {task.activity?.city} - {task.activity?.location}
+                            </span>
                           </td>
-                          <td className="py-4 px-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-900 font-medium">{task.activity?.brand}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-gray-400" />
-                                <span className="text-gray-600">
-                                  {task.activity?.city} - {task.activity?.location}
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <span className="text-gray-600">{task.vendor?.email || 'N/A'}</span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <CalendarDays className="w-4 h-4 text-gray-400" />
-                              {task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A'}
-                            </div>
+                          <td className="py-3 px-4">
+                            <span className="text-gray-600">
+                              {task.created_at ? format(new Date(task.created_at), 'MMM d, yyyy HH:mm') : 'N/A'}
+                            </span>
                           </td>
                         </tr>
                       ))}
@@ -311,6 +401,36 @@ export default function MappedTasks() {
               </>
             )}
           </div>
+
+          {/* Pagination */}
+          {filteredTasks.length > 0 && (
+            <div className="mt-6 flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredTasks.length)} of {filteredTasks.length} entries
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

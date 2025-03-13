@@ -15,8 +15,8 @@ export default function ClientLayout() {
         </div>
 
         {/* Main content */}
-        <main className="flex-1">
-          <div className="py-2 px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-x-hidden">
+          <div className="py-2 px-4 sm:px-6 lg:px-8 max-w-full">
             <Outlet />
           </div>
         </main>

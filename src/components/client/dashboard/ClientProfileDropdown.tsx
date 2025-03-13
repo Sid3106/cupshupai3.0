@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import type { Menu as MenuType } from '@headlessui/react';
 import { Menu, Transition } from '@headlessui/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -29,7 +30,7 @@ export const ClientProfileDropdown: React.FC = () => {
       >
         <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           <Menu.Item>
-            {({ active }) => (
+            {({ active }: { active: boolean }) => (
               <button
                 onClick={() => navigate('/client/profile')}
                 className={`${
@@ -41,7 +42,7 @@ export const ClientProfileDropdown: React.FC = () => {
             )}
           </Menu.Item>
           <Menu.Item>
-            {({ active }) => (
+            {({ active }: { active: boolean }) => (
               <button
                 onClick={handleLogout}
                 className={`${
