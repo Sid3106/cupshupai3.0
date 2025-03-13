@@ -1,0 +1,48 @@
+
+
+# General Coding Guidelines
+- Use TypeScript for all new components and modules.
+- Follow modular and reusable component design patterns.
+- Maintain strict typing wherever applicable.
+- Use camelCase for variables and functions, PascalCase for components, and SCREAMING_SNAKE_CASE for constants.
+- Ensure all database queries use Supabase's best practices (RLS, edge functions, or direct queries where needed).
+
+# Frontend Development
+- Use React with Next.js and Expo for mobile.
+- All components should be functional components with hooks.
+- Use Tailwind CSS for styling and avoid inline styles unless necessary.
+- All forms should use React Hook Form with Zod validation.
+- Navigation should follow Next.js routing standards for web and React Navigation for mobile.
+- State management should be handled via Zustand or React Context API, avoid unnecessary prop drilling.
+- Fetch data using SWR for caching or Supabase client for real-time updates.
+
+# Backend Development
+- All authentication should be handled through Supabase Auth.
+- Edge functions should be used for business logic that requires server execution.
+- Database queries should be optimized for minimal latency.
+- Use row-level security (RLS) policies for sensitive data access.
+- Triggers should be used only when necessary to avoid unnecessary complexity.
+- API calls should be handled through Supabase client or Edge functions, never directly exposing database endpoints.
+
+# Database & Supabase Rules
+- Use UUIDs as primary keys for all tables.
+- Ensure all necessary foreign key constraints are set.
+- Implement Supabase Row Level Security (RLS) for data protection.
+- All insert/update queries should go through edge functions instead of direct API mutations.
+- Every table should have `created_at` and `updated_at` timestamp fields.
+- Avoid redundant columns; use JSONB fields where applicable.
+
+# Deployment and Git Workflow
+- Always create a new Git branch when working on a new feature.
+- Feature branches should be named following this format: `feature-[short-description]`
+- Bug fix branches should be named as: `fix-[short-description]`
+- No direct commits to `main` branch. Use pull requests with code reviews.
+- Vercel will deploy from `main` branch automatically.
+- Ensure environment variables are correctly set up before deployment.
+
+# Error Handling and Logging
+- All errors should be handled with `try-catch` blocks.
+- Use Supabase logs and Vercel logs for tracking API failures.
+- Show user-friendly error messages, never expose raw backend errors.
+- Debug logs should be removed before committing code.
+

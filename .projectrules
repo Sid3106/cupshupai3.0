@@ -1,0 +1,74 @@
+# General Project Structure
+- This is a **multi-platform** project (Web & Mobile) using **Next.js** for web and **Expo** for mobile.
+- The backend is powered by **Supabase** with **PostgreSQL** as the database.
+- The app follows a **role-based authentication system**: CupShup (Admin), Vendors, Clients.
+- The app heavily relies on **Supabase Edge Functions** for business logic.
+- All database operations should **follow Supabase RLS (Row Level Security)**.
+- **API calls must be made via Edge Functions, not directly to the database.**
+
+# Authentication & Authorization
+- User authentication is handled by **Supabase Auth**.
+- CupShup Admin accounts should be **manually created** in Supabase.
+- Vendors must be **invited** via an **Edge Function** (`invite-vendor`).
+- A User who is signing up through Signup page is a Client. 
+- JWT tokens are used for secure authentication and should be refreshed automatically.
+- Role-based access control (RBAC) is enforced via **Supabase RLS policies**.
+
+# Frontend Architecture
+- The web app is built using **Node.js (React)** and styled with **Tailwind CSS**.
+- The mobile app is developed using **Expo (React Native)**.
+- The UI follows a **component-based architecture**, with reusable UI components stored in `/components`.
+- **State management is handled using Zustand (Web) & React Context (Mobile).**
+- Forms should be implemented using **React Hook Form + Zod validation**.
+
+# Backend Architecture
+- The backend is **Supabase**, using PostgreSQL.
+- **All database operations must be performed via Supabase Edge Functions.**
+- The `profiles` table stores user metadata linked to `auth.users`.
+- **Triggers** handle automatic insertion of user data into `profiles`, `vendors`, and `clients`.
+- **Supabase storage** is used for file uploads (e.g., logos, images, activity reports etc.).
+
+# API Communication
+- **Supabase SDK (supabase-js)** is used for API calls.
+- API requests should be **cached using SWR** to reduce redundant network calls.
+- **All API calls should be made via Edge Functions.**
+- Do not expose Supabase service role key in the frontend.
+
+# Database & Supabase Rules
+- **All tables must use UUID as the primary key.**
+- Every table should have `created_at` and `updated_at` fields.
+- Use **foreign key constraints** to maintain data integrity.
+- Ensure **RLS policies** restrict unauthorized data access.
+- Avoid redundant columns; use **JSONB fields** where applicable.
+
+# Deployment & DevOps
+- The project is **deployed on Vercel** for web and **Expo Go** for mobile.
+- Only the `main` branch gets auto-deployed to production in Vercel.
+- All environment variables must be configured in **Vercel & Supabase**.
+- A **staging environment** should be used for testing before merging into `main`.
+- Use **GitHub Actions** to automate testing and deployments.
+
+# Git Workflow & Branching
+- Follow **GitHub Flow**:  
+  - `main` → Production  
+  - `develop` → Staging  
+  - `feature-[name]` → New Features  
+  - `fix-[name]` → Bug Fixes  
+- **All changes must go through Pull Requests (PRs).**
+- PRs require **at least one review** before merging.
+
+# Error Handling & Logging
+- **All errors should be logged using Supabase Logs & Vercel Logs.**
+- Use `try-catch` blocks for handling API failures.
+- Never expose backend errors directly to the user.
+- Send meaningful error messages with proper HTTP status codes.
+
+# Best Practices for Cursor AI
+- Cursor AI should **follow `.cursorrules` for coding style**.
+- When refactoring code, ensure functionality remains **unchanged**.
+- Avoid unnecessary migrations; **optimize only when necessary**.
+- Always test Edge Functions before deploying.
+
+
+
+
