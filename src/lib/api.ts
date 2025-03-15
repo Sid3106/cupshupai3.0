@@ -148,6 +148,7 @@ export async function inviteClient(params: InviteClientParams): Promise<InviteCl
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         },
         body: JSON.stringify(params),
       }
@@ -157,6 +158,13 @@ export async function inviteClient(params: InviteClientParams): Promise<InviteCl
     
     if (!response.ok) {
       throw new Error(data.error || 'Failed to create client');
+    }
+
+    // Send welcome email after successful client creation
+    const emailResult = await sendClientWelcomeEmail(params.email, params.name);
+    if (!emailResult.success) {
+      console.error('Failed to send welcome email:', emailResult.error);
+      // Don't throw error here as the client was created successfully
     }
 
     return {
@@ -170,6 +178,44 @@ export async function inviteClient(params: InviteClientParams): Promise<InviteCl
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred'
+    };
+  }
+}
+
+export async function sendClientWelcomeEmail(email: string, clientName: string) {
+  try {
+    console.log('[API] Sending welcome email to client:', email);
+    
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/send-client-welcome`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({
+          email,
+          clientName
+        })
+      }
+    );
+
+    console.log('[API] Edge function response status:', response.status);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('[API] Edge function error:', error);
+      throw new Error(error.message || 'Failed to send welcome email');
+    }
+
+    console.log('[API] Welcome email sent successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('[API] Error sending client welcome email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send welcome email'
     };
   }
 }
