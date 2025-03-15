@@ -46,6 +46,9 @@ function App() {
               <Route path="/auth/callback" element={<AuthCallback />} />
             </Route>
 
+            {/* Catch-all dashboard route for email links */}
+            <Route path="/dashboard" element={<RoleBasedRoute />} />
+
             {/* Role-based redirect */}
             <Route path="/" element={<RoleBasedRoute />} />
 

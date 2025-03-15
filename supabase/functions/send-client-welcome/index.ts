@@ -98,7 +98,10 @@ serve(async (req) => {
             <h2>Welcome to CupShup AI! 🎉</h2>
             <p>We're thrilled to have you onboard! With CupShup AI, you'll have a streamlined experience to manage your projects and stay on top of everything.</p>
             <p>Get started by exploring your dashboard and unlocking all the powerful features designed for you.</p>
-            <a href="${APP_URL}/dashboard" class="button">Access Your Dashboard</a>
+            <a href="${APP_URL}/login?redirect=/client/dashboard" class="button">Access Your Dashboard</a>
+            <p style="margin-top: 20px; font-size: 14px; color: #666;">
+                Please sign in with your email and password to access your dashboard.
+            </p>
         </div>
         <div class="footer">
             <p>Need help? Contact us anytime at <a href="mailto:support@cupshup.co.in">support@cupshup.co.in</a></p>

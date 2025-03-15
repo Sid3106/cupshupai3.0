@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { KeyRound, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { signIn } from '../../lib/auth';
@@ -11,6 +11,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,10 +29,15 @@ export default function Login() {
       return;
     }
 
-    console.log('[Login] Sign in successful, navigating to home...');
+    console.log('[Login] Sign in successful, navigating...');
     try {
-      navigate('/');
-      console.log('[Login] Navigation complete');
+      if (redirectTo) {
+        navigate(redirectTo);
+        console.log('[Login] Navigated to redirect path:', redirectTo);
+      } else {
+        navigate('/');
+        console.log('[Login] Navigated to home');
+      }
     } catch (navError) {
       console.error('[Login] Navigation error:', navError);
     }
